@@ -353,8 +353,17 @@ class Model
 	 */
 	public function __isset($attribute_name)
 	{
-		return array_key_exists($attribute_name,$this->attributes) || array_key_exists($attribute_name,static::$alias_attribute);
-	}
+		if (
+			array_key_exists($attribute_name, $this->attributes) || 
+			array_key_exists($attribute_name, static::$alias_attribute) ||
+			method_exists($this, "get_${attribute_name}") ||
+			static::table()->has_relationship($attribute_name)
+		){
+			return true;
+		}
+
+		return false;
+	}		
 
 	/**
 	 * Magic allows un-defined attributes to set via $attributes.
