@@ -480,13 +480,17 @@ class Model
 		}
 
 		// convert php's \DateTime to ours
-		if (is_object($value) && get_class($value) === 'DateTime') {
+		if ($value instanceof \DateTime) {
 			$date_class = Config::instance()->get_date_class();
-			if ($date_class !== 'DateTime')
-				$value = $date_class::createFromFormat('Y-m-d H:i:s T', $value->format('Y-m-d H:i:s T'));
+			if (!($value instanceof $date_class))
+				$value = $date_class::createFromFormat(
+					Connection::DATETIME_TRANSLATE_FORMAT,
+					$value->format(Connection::DATETIME_TRANSLATE_FORMAT),
+					$value->getTimezone()
+				);
 		}
 
-		if ($value instanceof DateTimeLinkedModelInterface)
+		if ($value instanceof DateTimeInterface)
 			// Tell the Date object that it's associated with this model and attribute. This is so it
 			// has the ability to flag this model as dirty if a field in the Date object changes.
 			$value->attribute_of($this,$name);
