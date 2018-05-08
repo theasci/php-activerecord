@@ -121,7 +121,7 @@ abstract class Connection
 			$connection->protocol = $info->protocol;
 			$connection->logging = $config->get_logging();
 			$connection->logger = $connection->logging ? $config->get_logger() : null;
-			$connection->ensure_connect = $config->get_ensure_connection();
+			$connection->ensure_connection = $config->get_ensure_connection();
 
 			if (isset($info->charset))
 				$connection->set_encoding($info->charset);
@@ -359,8 +359,7 @@ abstract class Connection
 	 */
 	private function reconnect_if_gone(){
 		try {
-			if (!$this->connection->exec('SELECT 1'))
-				throw new DatabaseException($this);
+			$this->connection->prepare('SELECT 1')->execute();
 		} catch (PDOException $e) {
 			$exception_message = $e->getMessage();
 			if (strpos($exception_message, 'server has gone away') !== false ) {
