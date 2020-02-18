@@ -426,7 +426,7 @@ class Model
 		foreach (static::$delegate as &$item)
 		{
 			if (($delegated_name = $this->is_delegated($name,$item)))
-				return $this->$item['to']->$delegated_name = $value;
+				return $this->{$item['to']}->{$delegated_name} = $value;
 		}
 
 		$table = static::table();
@@ -1959,4 +1959,3 @@ class Model
 		return true;
 	}
 }
-
