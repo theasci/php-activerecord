@@ -377,7 +377,7 @@ abstract class Connection
 	 * @param array &$values Optional array of values to bind to the query.
 	 * @return string
 	 */
-	public function query_and_fetch_one($sql, &$values=array())
+	public function query_and_fetch_one($sql, $values=array())
 	{
 		$sth = $this->query($sql, $values);
 		$row = $sth->fetch(PDO::FETCH_NUM);
