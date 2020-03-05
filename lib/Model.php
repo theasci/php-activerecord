@@ -353,10 +353,21 @@ class Model
 	 */
 	public function __isset($attribute_name)
 	{
-		return array_key_exists($attribute_name,$this->attributes)
+		if(array_key_exists($attribute_name,$this->attributes)
 			|| array_key_exists($attribute_name,static::$alias_attribute)
 			|| method_exists($this, "get_${attribute_name}")
-			|| array_key_exists($attribute_name,$this->__relationships);
+			|| array_key_exists($attribute_name,$this->__relationships) ){
+			return true;	
+		}
+
+		foreach (static::$delegate as &$item)
+		{
+			if ( $this->is_delegated($attribute_name,$item) !== null ){
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
