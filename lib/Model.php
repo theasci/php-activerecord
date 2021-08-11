@@ -457,7 +457,7 @@ class Model
 				$pk = $value->get_primary_key(0);
 				return $this->assign_attribute(
 					$relationship->foreign_key[0],
-					$value->is_new_record() ? null : $value->{$pk}
+					($value->is_new_record() || !isset($pk[0])) ? null : $value->{$pk[0]}
 				);
 			} else {
 				throw new RelationshipException();
