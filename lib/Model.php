@@ -710,10 +710,10 @@ class Model
 	 */
 	private function is_delegated($name, &$delegate)
 	{
-		if (is_array($delegate) && $delegate['prefix'] != '')
+		if (is_array($delegate) && array_key_exists('prefix',$delegate) && $delegate['prefix'] != '')
 			$name = substr($name,strlen($delegate['prefix'])+1);
 
-		if (is_array($delegate) && in_array($name,$delegate['delegate']))
+		if (is_array($delegate) && array_key_exists('prefix',$delegate) && in_array($name,$delegate['delegate']))
 			return $name;
 
 		return null;
