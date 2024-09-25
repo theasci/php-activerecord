@@ -353,7 +353,21 @@ class Model
 	 */
 	public function __isset($attribute_name)
 	{
-		return array_key_exists($attribute_name,$this->attributes) || array_key_exists($attribute_name,static::$alias_attribute);
+		if(array_key_exists($attribute_name,$this->attributes)
+			|| array_key_exists($attribute_name,static::$alias_attribute)
+			|| method_exists($this, "get_${attribute_name}")
+			|| array_key_exists($attribute_name,$this->__relationships) ){
+			return true;
+		}
+
+		foreach (static::$delegate as &$item)
+		{
+			if ( $this->is_delegated($attribute_name,$item) !== null ){
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -696,10 +710,10 @@ class Model
 	 */
 	private function is_delegated($name, &$delegate)
 	{
-		if ($delegate['prefix'] != '')
+		if (is_array($delegate) && array_key_exists('prefix',$delegate) && $delegate['prefix'] != '')
 			$name = substr($name,strlen($delegate['prefix'])+1);
 
-		if (is_array($delegate) && in_array($name,$delegate['delegate']))
+		if (is_array($delegate) && array_key_exists('prefix',$delegate) && in_array($name,$delegate['delegate']))
 			return $name;
 
 		return null;

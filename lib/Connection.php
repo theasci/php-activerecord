@@ -308,7 +308,7 @@ abstract class Connection
 	 */
 	public function insert_id($sequence=null)
 	{
-		return $this->connection->lastInsertId($sequence);
+		return Column::castIntegerSafely($this->connection->lastInsertId($sequence));
 	}
 
 	/**
