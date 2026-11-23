@@ -1,6 +1,8 @@
 <?php
-class Position extends ActiveRecord\Model
+
+use ActiveRecord\Model;
+
+class Position extends Model
 {
-	static $belongs_to;
+    public static $belongs_to;
 };
-?>

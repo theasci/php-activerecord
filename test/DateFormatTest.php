@@ -1,18 +1,16 @@
 <?php
 
-class DateFormatTest extends DatabaseTest
+class DateFormatTest extends DatabaseTestCase
 {
+    public function test_datefield_gets_converted_to_ar_datetime()
+    {
+        // make sure first author has a date
+        $author = Author::first();
+        $author->some_date = new DateTime();
+        $author->save();
 
-	public function test_datefield_gets_converted_to_ar_datetime()
-	{
-		//make sure first author has a date
-		$author = Author::first();
-		$author->some_date = new DateTime();
-		$author->save();
-		
-		$author = Author::first();
-		$this->assert_is_a("ActiveRecord\\DateTime",$author->some_date);
-	}
+        $author = Author::first();
+        $this->assert_is_a(ActiveRecord\DateTime::class, $author->some_date);
+    }
 
 };
-?>

@@ -1,5 +1,7 @@
 <?php
+
 namespace ActiveRecord;
+
 use Closure;
 
 /**
@@ -10,106 +12,109 @@ use Closure;
  */
 class Cache
 {
-	static $adapter = null;
-	static $options = array();
+    public static $adapter;
 
-	/**
-	 * Initializes the cache.
-	 *
-	 * With the $options array it's possible to define:
-	 * - expiration of the key, (time in seconds)
-	 * - a namespace for the key
-	 *
-	 * this last one is useful in the case two applications use
-	 * a shared key/store (for instance a shared Memcached db)
-	 *
-	 * Ex:
-	 * $cfg_ar = ActiveRecord\Config::instance();
-	 * $cfg_ar->set_cache('memcache://localhost:11211',array('namespace' => 'my_cool_app',
-	 *																											 'expire'		 => 120
-	 *																											 ));
-	 *
-	 * In the example above all the keys expire after 120 seconds, and the
-	 * all get a postfix 'my_cool_app'.
-	 *
-	 * (Note: expiring needs to be implemented in your cache store.)
-	 *
-	 * @param string $url URL to your cache server
-	 * @param array $options Specify additional options
-	 */
-	public static function initialize($url, $options=array())
-	{
-		if ($url)
-		{
-			$url = parse_url($url);
-			$file = ucwords(Inflector::instance()->camelize($url['scheme']));
-			$class = "ActiveRecord\\$file";
-			require_once __DIR__ . "/cache/$file.php";
-			static::$adapter = new $class($url);
-		}
-		else
-			static::$adapter = null;
+    public static $options = [];
 
-		static::$options = array_merge(array('expire' => 30, 'namespace' => ''),$options);
-	}
+    /**
+     * Initializes the cache.
+     *
+     * With the $options array it's possible to define:
+     * - expiration of the key, (time in seconds)
+     * - a namespace for the key
+     *
+     * this last one is useful in the case two applications use
+     * a shared key/store (for instance a shared Memcached db)
+     *
+     * Ex:
+     * $cfg_ar = ActiveRecord\Config::instance();
+     * $cfg_ar->set_cache('memcache://localhost:11211',array('namespace' => 'my_cool_app',
+     *																											 'expire'		 => 120
+     *																											 ));
+     *
+     * In the example above all the keys expire after 120 seconds, and the
+     * all get a postfix 'my_cool_app'.
+     *
+     * (Note: expiring needs to be implemented in your cache store.)
+     *
+     * @param  string  $url  URL to your cache server
+     * @param  array  $options  Specify additional options
+     */
+    public static function initialize($url, $options = [])
+    {
+        if ($url) {
+            $url = parse_url($url);
+            $file = ucwords(Inflector::instance()->camelize($url['scheme']));
+            $class = "ActiveRecord\\{$file}";
+            require_once __DIR__."/cache/{$file}.php";
+            static::$adapter = new $class($url);
+        } else {
+            static::$adapter = null;
+        }
 
-	public static function flush()
-	{
-		if (static::$adapter)
-			static::$adapter->flush();
-	}
+        static::$options = array_merge([
+            'expire' => 30,
+            'namespace' => '',
+        ], $options);
+    }
 
-	/**
-	 * Attempt to retrieve a value from cache using a key. If the value is not found, then the closure method
-	 * will be invoked, and the result will be stored in cache using that key.
-	 * @param $key
-	 * @param $closure
-	 * @param $expire in seconds
-	 * @return mixed
-	 */
-	public static function get($key, $closure, $expire=null)
-	{
-		if (!static::$adapter)
-			return $closure();
+    public static function flush()
+    {
+        if (static::$adapter) {
+            static::$adapter->flush();
+        }
+    }
 
-		if (is_null($expire))
-		{
-			$expire = static::$options['expire'];
-		}
+    /**
+     * Attempt to retrieve a value from cache using a key. If the value is not found, then the closure method
+     * will be invoked, and the result will be stored in cache using that key.
+     *
+     * @param  $expire  in seconds
+     * @return mixed
+     */
+    public static function get($key, $closure, $expire = null)
+    {
+        if (! static::$adapter) {
+            return $closure();
+        }
 
-		$key = static::get_namespace() . $key;
+        $expire ??= static::$options['expire'];
 
-		if (!($value = static::$adapter->read($key)))
-			static::$adapter->write($key, ($value = $closure()), $expire);
+        $key = static::get_namespace().$key;
 
-		return $value;
-	}
+        if (! ($value = static::$adapter->read($key))) {
+            static::$adapter->write($key, ($value = $closure()), $expire);
+        }
 
-	public static function set($key, $var, $expire=null)
-	{
-		if (!static::$adapter)
-			return;
+        return $value;
+    }
 
-		if (is_null($expire))
-		{
-			$expire = static::$options['expire'];
-		}
+    public static function set($key, $var, $expire = null)
+    {
+        if (! static::$adapter) {
+            return;
+        }
 
-		$key = static::get_namespace() . $key;
-		return static::$adapter->write($key, $var, $expire);
-	}
+        $expire ??= static::$options['expire'];
 
-	public static function delete($key)
-	{
-		if (!static::$adapter)
-			return;
+        $key = static::get_namespace().$key;
 
-		$key = static::get_namespace() . $key;
-		return static::$adapter->delete($key);
-	}
+        return static::$adapter->write($key, $var, $expire);
+    }
 
-	private static function get_namespace()
-	{
-		return (isset(static::$options['namespace']) && strlen(static::$options['namespace']) > 0) ? (static::$options['namespace'] . "::") : "";
-	}
+    public static function delete($key)
+    {
+        if (! static::$adapter) {
+            return;
+        }
+
+        $key = static::get_namespace().$key;
+
+        return static::$adapter->delete($key);
+    }
+
+    private static function get_namespace()
+    {
+        return (isset(static::$options['namespace']) && strlen(static::$options['namespace']) > 0) ? (static::$options['namespace'].'::') : '';
+    }
 }

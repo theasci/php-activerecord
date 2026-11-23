@@ -1,7 +1,5 @@
 <?php
-/**
- * @package ActiveRecord
- */
+
 namespace ActiveRecord;
 
 /**
@@ -11,182 +9,189 @@ namespace ActiveRecord;
  * 'name = :name AND author = :author'
  * 'id = IN(:ids)'
  * 'id IN(:subselect)'
- * 
- * @package ActiveRecord
  */
 class Expressions
 {
-	const ParameterMarker = '?';
+    const ParameterMarker = '?';
 
-	private $expressions;
-	private $values = array();
-	private $connection;
+    private $expressions;
 
-	public function __construct($connection, $expressions=null /* [, $values ... ] */)
-	{
-		$values = null;
-		$this->connection = $connection;
+    private $values = [];
 
-		if (is_array($expressions))
-		{
-			$glue = func_num_args() > 2 ? func_get_arg(2) : ' AND ';
-			list($expressions,$values) = $this->build_sql_from_hash($expressions,$glue);
-		}
+    public function __construct(
+        private $connection,
+        $expressions = null /* [, $values ... ] */
+    ) {
+        $values = null;
 
-		if ($expressions != '')
-		{
-			if (!$values)
-				$values = array_slice(func_get_args(),2);
+        if (is_array($expressions)) {
+            $glue = func_num_args() > 2 ? func_get_arg(2) : ' AND ';
+            [$expressions, $values] = $this->build_sql_from_hash($expressions, $glue);
+        }
 
-			$this->values = $values;
-			$this->expressions = $expressions;
-		}
-	}
+        if ($expressions != '') {
+            if (! $values) {
+                $values = array_slice(func_get_args(), 2);
+            }
 
-	/**
-	 * Bind a value to the specific one based index. There must be a bind marker
-	 * for each value bound or to_s() will throw an exception.
-	 */
-	public function bind($parameter_number, $value)
-	{
-		if ($parameter_number <= 0)
-			throw new ExpressionsException("Invalid parameter index: $parameter_number");
+            $this->values = $values;
+            $this->expressions = $expressions;
+        }
+    }
 
-		$this->values[$parameter_number-1] = $value;
-	}
+    /**
+     * Bind a value to the specific one based index. There must be a bind marker
+     * for each value bound or to_s() will throw an exception.
+     */
+    public function bind($parameter_number, $value)
+    {
+        if ($parameter_number <= 0) {
+            throw new ExpressionsException("Invalid parameter index: {$parameter_number}");
+        }
 
-	public function bind_values($values)
-	{
-		$this->values = $values;
-	}
+        $this->values[$parameter_number - 1] = $value;
+    }
 
-	/**
-	 * Returns all the values currently bound.
-	 */
-	public function values()
-	{
-		return $this->values;
-	}
+    public function bind_values($values)
+    {
+        $this->values = $values;
+    }
 
-	/**
-	 * Returns the connection object.
-	 */
-	public function get_connection()
-	{
-		return $this->connection;
-	}
+    /**
+     * Returns all the values currently bound.
+     */
+    public function values()
+    {
+        return $this->values;
+    }
 
-	/**
-	 * Sets the connection object. It is highly recommended to set this so we can
-	 * use the adapter's native escaping mechanism.
-	 *
-	 * @param string $connection a Connection instance
-	 */
-	public function set_connection($connection)
-	{
-		$this->connection = $connection;
-	}
+    /**
+     * Returns the connection object.
+     */
+    public function get_connection()
+    {
+        return $this->connection;
+    }
 
-	public function to_s($substitute=false, &$options=null)
-	{
-		if (!$options) $options = array();
-		
-		$values = array_key_exists('values',$options) ? $options['values'] : $this->values;
+    /**
+     * Sets the connection object. It is highly recommended to set this so we can
+     * use the adapter's native escaping mechanism.
+     *
+     * @param  string  $connection  a Connection instance
+     */
+    public function set_connection($connection)
+    {
+        $this->connection = $connection;
+    }
 
-		$ret = "";
-		$replace = array();
-		$num_values = count($values);
-		$len = strlen($this->expressions);
-		$quotes = 0;
+    public function to_s($substitute = false, &$options = null)
+    {
+        if (! $options) {
+            $options = [];
+        }
 
-		for ($i=0,$n=strlen($this->expressions),$j=0; $i<$n; ++$i)
-		{
-			$ch = $this->expressions[$i];
+        $values = array_key_exists('values', $options) ? $options['values'] : $this->values;
 
-			if ($ch == self::ParameterMarker)
-			{
-				if ($quotes % 2 == 0)
-				{
-					if ($j > $num_values-1)
-						throw new ExpressionsException("No bound parameter for index $j");
+        $ret = '';
+        $replace = [];
+        $num_values = count($values);
+        $len = strlen($this->expressions);
+        $quotes = 0;
 
-					$ch = $this->substitute($values,$substitute,$i,$j++);
-				}
-			}
-			elseif ($ch == '\'' && $i > 0 && $this->expressions[$i-1] != '\\')
-				++$quotes;
+        for ($i = 0,$n = strlen($this->expressions),$j = 0; $i < $n; $i++) {
+            $ch = $this->expressions[$i];
 
-			$ret .= $ch;
-		}
-		return $ret;
-	}
+            if ($ch == self::ParameterMarker) {
+                if ($quotes % 2 == 0) {
+                    if ($j > $num_values - 1) {
+                        throw new ExpressionsException("No bound parameter for index {$j}");
+                    }
 
-	private function build_sql_from_hash(&$hash, $glue)
-	{
-		$sql = $g = "";
+                    $ch = $this->substitute($values, $substitute, $i, $j++);
+                }
+            } elseif ($ch == '\'' && $i > 0 && $this->expressions[$i - 1] != '\\') {
+                $quotes++;
+            }
 
-		foreach ($hash as $name => $value)
-		{
-			if ($this->connection)
-				$name = $this->connection->quote_name($name);
+            $ret .= $ch;
+        }
 
-			if (is_array($value))
-				$sql .= "$g$name IN(?)";
-			elseif (is_null($value))
-				$sql .= "$g$name IS ?";
-			else
-				$sql .= "$g$name=?";
+        return $ret;
+    }
 
-			$g = $glue;
-		}
-		return array($sql,array_values($hash));
-	}
+    private function build_sql_from_hash(&$hash, $glue)
+    {
+        $sql = $g = '';
 
-	private function substitute(&$values, $substitute, $pos, $parameter_index)
-	{
-		$value = $values[$parameter_index];
+        foreach ($hash as $name => $value) {
+            if ($this->connection) {
+                $name = $this->connection->quote_name($name);
+            }
 
-		if (is_array($value))
-		{
-			$value_count = count($value);
+            if (is_array($value)) {
+                $sql .= "{$g}{$name} IN(?)";
+            } elseif ($value === null) {
+                $sql .= "{$g}{$name} IS ?";
+            } else {
+                $sql .= "{$g}{$name}=?";
+            }
 
-			if ($value_count === 0)
-				if ($substitute)
-					return 'NULL';
-				else
-					return self::ParameterMarker;
+            $g = $glue;
+        }
 
-			if ($substitute)
-			{
-				$ret = '';
+        return [$sql, array_values($hash)];
+    }
 
-				for ($i=0, $n=$value_count; $i<$n; ++$i)
-					$ret .= ($i > 0 ? ',' : '') . $this->stringify_value($value[$i]);
+    private function substitute(&$values, $substitute, $pos, $parameter_index)
+    {
+        $value = $values[$parameter_index];
 
-				return $ret;
-			}
-			return join(',',array_fill(0,$value_count,self::ParameterMarker));
-		}
+        if (is_array($value)) {
+            $value_count = count($value);
 
-		if ($substitute)
-			return $this->stringify_value($value);
+            if ($value_count === 0) {
+                if ($substitute) {
+                    return 'NULL';
+                } else {
+                    return self::ParameterMarker;
+                }
+            }
 
-		return $this->expressions[$pos];
-	}
+            if ($substitute) {
+                $ret = '';
 
-	private function stringify_value($value)
-	{
-		if (is_null($value))
-			return "NULL";
+                for ($i = 0, $n = $value_count; $i < $n; $i++) {
+                    $ret .= ($i > 0 ? ',' : '').$this->stringify_value($value[$i]);
+                }
 
-		return is_string($value) ? $this->quote_string($value) : $value;
-	}
+                return $ret;
+            }
 
-	private function quote_string($value)
-	{
-		if ($this->connection)
-			return $this->connection->escape($value);
+            return implode(',', array_fill(0, $value_count, self::ParameterMarker));
+        }
 
-		return "'" . str_replace("'","''",$value) . "'";
-	}
+        if ($substitute) {
+            return $this->stringify_value($value);
+        }
+
+        return $this->expressions[$pos];
+    }
+
+    private function stringify_value($value)
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        return is_string($value) ? $this->quote_string($value) : $value;
+    }
+
+    private function quote_string($value)
+    {
+        if ($this->connection) {
+            return $this->connection->escape($value);
+        }
+
+        return "'".str_replace("'", "''", $value)."'";
+    }
 }

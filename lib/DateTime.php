@@ -1,7 +1,5 @@
 <?php
-/**
- * @package ActiveRecord
- */
+
 namespace ActiveRecord;
 
 /**
@@ -30,136 +28,142 @@ namespace ActiveRecord;
  * echo $now->format('awesome_format')  # 03:04:05 01/02/2010
  * </code>
  *
- * @package ActiveRecord
  * @see http://php.net/manual/en/class.datetime.php
  */
-class DateTime extends \DateTime implements DateTimeLinkedModelInterface
+class DateTime extends \DateTime implements
+    \Stringable,
+    DateTimeLinkedModelInterface
 {
-	/**
-	 * Default format used for format() and __toString()
-	 */
-	public static $DEFAULT_FORMAT = 'rfc2822';
+    /**
+     * Default format used for format() and __toString()
+     */
+    public static $DEFAULT_FORMAT = "rfc2822";
 
-	/**
-	 * Pre-defined format strings.
-	 */
-	public static $FORMATS = array(
-		'db'      => 'Y-m-d H:i:s',
-		'number'  => 'YmdHis',
-		'time'    => 'H:i',
-		'short'   => 'd M H:i',
-		'long'    => 'F d, Y H:i',
-		'atom'    => \DateTime::ATOM,
-		'cookie'  => \DateTime::COOKIE,
-		'iso8601' => \DateTime::ISO8601,
-		'rfc822'  => \DateTime::RFC822,
-		'rfc850'  => \DateTime::RFC850,
-		'rfc1036' => \DateTime::RFC1036,
-		'rfc1123' => \DateTime::RFC1123,
-		'rfc2822' => \DateTime::RFC2822,
-		'rfc3339' => \DateTime::RFC3339,
-		'rss'     => \DateTime::RSS,
-		'w3c'     => \DateTime::W3C);
+    /**
+     * Pre-defined format strings.
+     */
+    public static $FORMATS = [
+        "db" => "Y-m-d H:i:s",
+        "number" => "YmdHis",
+        "time" => "H:i",
+        "short" => "d M H:i",
+        "long" => "F d, Y H:i",
+        "atom" => \DateTime::ATOM,
+        "cookie" => \DateTime::COOKIE,
+        "iso8601" => \DateTime::ISO8601,
+        "rfc822" => \DateTime::RFC822,
+        "rfc850" => \DateTime::RFC850,
+        "rfc1036" => \DateTime::RFC1036,
+        "rfc1123" => \DateTime::RFC1123,
+        "rfc2822" => \DateTime::RFC2822,
+        "rfc3339" => \DateTime::RFC3339,
+        "rss" => \DateTime::RSS,
+        "w3c" => \DateTime::W3C,
+    ];
 
-	private $model;
-	private $attribute_name;
+    private $model;
 
-	public function attribute_of($model, $attribute_name)
-	{
-		$this->model = $model;
-		$this->attribute_name = $attribute_name;
-	}
+    private $attribute_name;
 
-	/**
-	 * Formats the DateTime to the specified format.
-	 *
-	 * <code>
-	 * $datetime->format();         # uses the format defined in DateTime::$DEFAULT_FORMAT
-	 * $datetime->format('short');  # d M H:i
-	 * $datetime->format('Y-m-d');  # Y-m-d
-	 * </code>
-	 *
-	 * @see FORMATS
-	 * @see get_format
-	 * @param string $format A format string accepted by get_format()
-	 * @return string formatted date and time string
-	 */
-	public function format($format=null)
-	{
-		return parent::format(self::get_format($format));
-	}
+    public function attribute_of($model, $attribute_name)
+    {
+        $this->model = $model;
+        $this->attribute_name = $attribute_name;
+    }
 
-	/**
-	 * Returns the format string.
-	 *
-	 * If $format is a pre-defined format in $FORMATS it will return that otherwise
-	 * it will assume $format is a format string itself.
-	 *
-	 * @see FORMATS
-	 * @param string $format A pre-defined string format or a raw format string
-	 * @return string a format string
-	 */
-	public static function get_format($format=null)
-	{
-		// use default format if no format specified
-		if (!$format)
-			$format = self::$DEFAULT_FORMAT;
+    /**
+     * Formats the DateTime to the specified format.
+     *
+     * <code>
+     * $datetime->format();         # uses the format defined in DateTime::$DEFAULT_FORMAT
+     * $datetime->format('short');  # d M H:i
+     * $datetime->format('Y-m-d');  # Y-m-d
+     * </code>
+     *
+     * @see FORMATS
+     * @see get_format
+     *
+     * @param  string  $format  A format string accepted by get_format()
+     * @return string formatted date and time string
+     */
+    public function format($format = null): string
+    {
+        return parent::format(self::get_format($format));
+    }
 
-		// format is a friendly
-		if (array_key_exists($format, self::$FORMATS))
-			 return self::$FORMATS[$format];
+    /**
+     * Returns the format string.
+     *
+     * If $format is a pre-defined format in $FORMATS it will return that otherwise
+     * it will assume $format is a format string itself.
+     *
+     * @see FORMATS
+     *
+     * @param  string  $format  A pre-defined string format or a raw format string
+     * @return string a format string
+     */
+    public static function get_format($format = null)
+    {
+        // use default format if no format specified
+        if (!$format) {
+            $format = self::$DEFAULT_FORMAT;
+        }
 
-		// raw format
-		return $format;
-	}
+        // format is a friendly
+        if (array_key_exists($format, self::$FORMATS)) {
+            return self::$FORMATS[$format];
+        }
 
-	/**
-	 * This needs to be overriden so it returns an instance of this class instead of PHP's \DateTime.
-	 * See http://php.net/manual/en/datetime.createfromformat.php
-	 */
-	public static function createFromFormat($format, $time, $tz = null)
-	{
-		$phpDate = $tz ? parent::createFromFormat($format, $time, $tz) : parent::createFromFormat($format, $time);
-		if (!$phpDate)
-			return false;
-		// convert to this class using the timestamp
-		$ourDate = new static;
-		$ourDate->setTimestamp($phpDate->getTimestamp());
-		return $ourDate;
-	}
+        // raw format
+        return $format;
+    }
 
-	public function __toString()
-	{
-		return $this->format();
-	}
 
-	private function flag_dirty()
-	{
-		if ($this->model)
-			$this->model->flag_dirty($this->attribute_name);
-	}
+    public function __toString(): string
+    {
+        return $this->format();
+    }
 
-	public function setDate($year, $month, $day)
-	{
-		$this->flag_dirty();
-		call_user_func_array(array($this,'parent::setDate'),func_get_args());
-	}
+    private function flag_dirty()
+    {
+        if ($this->model) {
+            $this->model->flag_dirty($this->attribute_name);
+        }
+    }
 
-	public function setISODate($year, $week , $day=null)
-	{
-		$this->flag_dirty();
-		call_user_func_array(array($this,'parent::setISODate'),func_get_args());
-	}
+    public function setDate($year, $month, $day): self
+    {
+        $this->flag_dirty();
+        parent::setDate(...func_get_args());
 
-	public function setTime($hour, $minute, $second=null, $microsecond=null)
-	{
-		$this->flag_dirty();
-		call_user_func_array(array($this,'parent::setTime'),func_get_args());
-	}
+        return $this;
+    }
 
-	public function setTimestamp($unixtimestamp)
-	{
-		$this->flag_dirty();
-		call_user_func_array(array($this,'parent::setTimestamp'),func_get_args());
-	}
+    public function setISODate($year, $week, $day = null): self
+    {
+        $this->flag_dirty();
+        parent::setISODate(...func_get_args());
+
+        return $this;
+    }
+
+    public function setTime(
+        $hour,
+        $minute,
+        $second = null,
+        $microsecond = null,
+    ): self {
+        $this->flag_dirty();
+        parent::setTime(...func_get_args());
+
+        return $this;
+    }
+
+    public function setTimestamp($unixtimestamp): self
+    {
+        $this->flag_dirty();
+        parent::setTimestamp(...func_get_args());
+
+        return $this;
+    }
 }

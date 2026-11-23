@@ -1,8 +1,10 @@
 <?php
-class JoinBook extends ActiveRecord\Model
-{
-	static $table_name = 'books';
 
-	static $belongs_to = array();
+use ActiveRecord\Model;
+
+class JoinBook extends Model
+{
+    public static $table_name = 'books';
+
+    public static $belongs_to = [];
 };
-?>

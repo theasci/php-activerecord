@@ -2,27 +2,37 @@
 
 namespace foo\bar\biz;
 
-class User extends \ActiveRecord\Model {
-	static $has_many = array(
-		array('user_newsletters'),
-		array('newsletters', 'through' => 'user_newsletters')
-	);
+use ActiveRecord\Model;
+
+class User extends Model
+{
+    public static $has_many = [
+        ['user_newsletters'],
+        [
+            'newsletters',
+            'through' => 'user_newsletters',
+        ],
+    ];
 
 }
 
-class Newsletter extends \ActiveRecord\Model {
-	static $has_many = array(
-		array('user_newsletters'),
-		array('users', 'through' => 'user_newsletters'),
-	);
+class Newsletter extends Model
+{
+    public static $has_many = [
+        ['user_newsletters'],
+        [
+            'users',
+            'through' => 'user_newsletters',
+        ],
+    ];
 }
 
-class UserNewsletter extends \ActiveRecord\Model {
-	static $belong_to = array(
-		array('user'),
-		array('newsletter'),
-	);
+class UserNewsletter extends Model
+{
+    public static $belong_to = [
+        ['user'],
+        ['newsletter'],
+    ];
 }
 
-# vim: ts=4 noet nobinary
-?>
+// vim: ts=4 noet nobinary
