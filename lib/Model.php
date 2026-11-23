@@ -1621,7 +1621,7 @@ class Model
      *
      * @see find
      *
-     * @return array array of records found
+     * @return static[]
      */
     public static function all(/* ... */)
     {
@@ -1868,7 +1868,7 @@ class Model
      *
      * @param  ?array  $values  An array containing values for the pk
      * @param  array  $options  An options array
-     * @return Model
+     * @return static|static[]
      *
      * @throws {@link RecordNotFound} if a record could not be found
      */
@@ -1921,7 +1921,7 @@ class Model
      *
      * @param  string  $sql  The raw SELECT query
      * @param  array  $values  An array of values for any parameters that needs to be bound
-     * @return array An array of models
+     * @return static[]
      */
     public static function find_by_sql($sql, $values = null)
     {
@@ -1933,7 +1933,7 @@ class Model
      *
      * @param  string  $sql  SQL to execute
      * @param  array  $values  Bind values, if any, for the query
-     * @return object A PDOStatement object
+     * @return \PDOStatement
      */
     public static function query($sql, $values = null)
     {
